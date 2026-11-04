@@ -1,0 +1,93 @@
+@startuml modelo-caracteristicas
+' Modelo de características de Netanbook (BookApp) — Sesión 3
+' Notación: círculo relleno = obligatoria, círculo hueco = opcional.
+' No hay grupos OR/XOR ni restricciones requires/excludes: todas las
+' features variables son opcionales e independientes.
+
+title Netanbook (BookApp) — Modelo de características
+
+left to right direction
+skinparam shadowing false
+skinparam defaultFontName DejaVu Sans
+skinparam ArrowColor #333333
+skinparam rectangle {
+  BorderColor #333333
+  RoundCorner 8
+}
+skinparam rectangle<<raiz>> {
+  BackgroundColor #1F4E79
+  FontColor #FFFFFF
+  FontStyle bold
+}
+skinparam rectangle<<core>> {
+  BackgroundColor #D6E4F0
+}
+skinparam rectangle<<comun>> {
+  BackgroundColor #FFF2CC
+}
+skinparam rectangle<<original>> {
+  BackgroundColor #E2F0D9
+}
+hide stereotype
+
+rectangle "Netanbook\n(BookApp)" as Root <<raiz>>
+
+' ---------- Core obligatorio ----------
+rectangle "Core" as Core <<core>>
+rectangle "Libro\n<size:10>id · título (obligatorio)</size>\n<size:10>autor (atributo opcional)</size>\n<size:10>estado: Pendiente | Leyendo | Terminado</size>" as Libro <<core>>
+rectangle "Gestión de biblioteca" as Gestion <<core>>
+rectangle "Añadir libro" as Alta <<core>>
+rectangle "Listar y consultar" as Consulta <<core>>
+rectangle "Editar libro" as Edicion <<core>>
+rectangle "Cambiar estado" as Estado <<core>>
+rectangle "Eliminar libro" as Baja <<core>>
+rectangle "Persistencia local\n<size:10>tecnología por decidir</size>" as Persistencia <<core>>
+
+Root --@ Core
+Core --@ Libro
+Core --@ Gestion
+Core --@ Persistencia
+Gestion --@ Alta
+Gestion --@ Consulta
+Gestion --@ Edicion
+Gestion --@ Estado
+Gestion --@ Baja
+
+' ---------- Features comunes (F1–F5) ----------
+rectangle "F1 · Progreso\n<size:10>total de páginas, página actual, % leído</size>" as F1 <<comun>>
+rectangle "F2 · Notas y citas\n<size:10>anotaciones vinculadas a un libro</size>" as F2 <<comun>>
+rectangle "F3 · Categorías\n<size:10>clasificar y filtrar</size>" as F3 <<comun>>
+rectangle "F4 · Valoraciones y reseñas\n<size:10>puntuación 1–5 y reseña</size>" as F4 <<comun>>
+rectangle "F5 · Estadísticas\n<size:10>total y recuento por estado</size>" as F5 <<comun>>
+
+Root --0 F1
+Root --0 F2
+Root --0 F3
+Root --0 F4
+Root --0 F5
+
+' ---------- Features originales (una por integrante) ----------
+rectangle "O1 · Préstamos\n<size:10>a quién se presta y cuándo vuelve</size>" as O1 <<original>>
+rectangle "O2 · Objetivo anual\n<size:10>reto de libros terminados al año</size>" as O2 <<original>>
+rectangle "O3 · Temporizador de lectura\n<size:10>sesiones cronometradas por libro</size>" as O3 <<original>>
+rectangle "O4 · Importar y exportar CSV\n<size:10>incluido desde Goodreads</size>" as O4 <<original>>
+
+Root --0 O1
+Root --0 O2
+Root --0 O3
+Root --0 O4
+
+legend right
+  <b>Notación</b>
+  ●  obligatoria    ○  opcional
+  <back:#D6E4F0> Core (obligatorio) </back>
+  <back:#FFF2CC> Features comunes F1–F5 </back>
+  <back:#E2F0D9> Features originales </back>
+
+  Sin grupos OR/XOR ni restricciones cruzadas.
+  Variantes válidas: Base (solo Core),
+  Común (Core + F1–F5), Personalizada
+  (cualquier subconjunto) y Completa (todas).
+endlegend
+
+@enduml

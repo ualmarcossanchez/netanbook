@@ -1,0 +1,151 @@
+@startuml mvvm-clases
+' Diagrama de clases de Netanbook — Sesión 3
+' Core con MVVM (Model, View, ViewModel) y bocetos de los modelos de las features.
+
+title Netanbook — Core MVVM y modelos de las features
+
+skinparam shadowing false
+skinparam defaultFontName DejaVu Sans
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam class {
+  BorderColor #333333
+  ArrowColor #333333
+}
+skinparam package<<core>> {
+  BackgroundColor #EEF4FA
+}
+skinparam package<<feature>> {
+  BackgroundColor #FFFBEA
+}
+skinparam package<<original>> {
+  BackgroundColor #F1F8EC
+}
+hide stereotype
+
+package "Application" {
+  class NetanbookApp <<@main>> {
+    body: some Scene
+  }
+}
+
+package "Core" <<core>> {
+  package "Views" {
+    class BookListView <<View>> {
+      - viewModel: BookListViewModel  <<@State>>
+      body: some View
+    }
+    class BookSectionView <<View>> {
+      status: ReadingStatus
+      books: [Book]
+    }
+    class BookRowView <<View>> {
+      book: Book
+    }
+  }
+
+  package "ViewModels" {
+    class BookListViewModel <<@Observable>> {
+      + books: [Book]  {readOnly}
+      + books(with: ReadingStatus): [Book]
+      + {static} sampleBooks: [Book]
+    }
+  }
+
+  package "Models" {
+    class Book <<struct, Identifiable>> {
+      + id: UUID  {let}
+      + title: String
+      + author: String?
+      + status: ReadingStatus = .pending
+      + {static} isValidTitle(String): Bool
+    }
+    enum ReadingStatus <<CaseIterable>> {
+      pending = "Pendiente"
+      reading = "Leyendo"
+      finished = "Terminado"
+      + displayName: String
+    }
+  }
+}
+
+package "Features" {
+  package "F1 Progreso" <<feature>> {
+    class ReadingProgress {
+      bookID: UUID
+      totalPages: Int?
+      currentPage: Int
+    }
+  }
+  package "F2 NotasYCitas" <<feature>> {
+    class BookNote {
+      id: UUID
+      bookID: UUID
+      kind: NoteKind
+      text: String
+      page: Int?
+      createdAt: Date
+    }
+    enum NoteKind {
+      note = "Nota"
+      quote = "Cita"
+    }
+  }
+  package "F3 Categorias" <<feature>> {
+    class BookCategory {
+      id: UUID
+      name: String
+    }
+    class BookCategoryAssignment {
+      bookID: UUID
+      categoryID: UUID
+    }
+  }
+  package "F4 ValoracionesYResenas" <<feature>> {
+    class BookReview {
+      bookID: UUID
+      rating: Int  {1...5}
+      text: String?
+    }
+  }
+  package "F5 Estadisticas" <<feature>> {
+    class LibraryStatistics {
+      totalBooks: Int
+      pendingCount: Int
+      readingCount: Int
+      finishedCount: Int
+    }
+  }
+}
+
+' ---------- MVVM ----------
+NetanbookApp ..> BookListView : muestra
+BookListView *-- BookListViewModel : posee
+BookListView ..> BookSectionView
+BookSectionView ..> BookRowView
+BookListViewModel o-- "0..*" Book : guarda la colección
+Book --> "1" ReadingStatus
+
+' ---------- Features → Core (por bookID) ----------
+ReadingProgress "0..1" ..> "1" Book : bookID
+BookNote "0..*" ..> "1" Book : bookID
+BookNote --> NoteKind
+BookCategoryAssignment ..> Book : bookID
+BookCategoryAssignment ..> BookCategory : categoryID
+BookReview "0..1" ..> "1" Book : bookID
+LibraryStatistics ..> Book : se calcula a partir de [Book]
+
+note right of BookListViewModel
+  Responsable del listado y de modificar
+  el estado de los libros. La vista solo
+  lee y delega las acciones (sesión 4:
+  cambiar estado, añadir y eliminar).
+end note
+
+note bottom of Book
+  Book no conoce ninguna feature.
+  Cada feature guarda sus propios datos
+  y apunta al libro con bookID.
+end note
+
+@enduml

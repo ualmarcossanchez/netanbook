@@ -1,0 +1,87 @@
+@startuml estructura-proyecto
+' Estructura del proyecto Netanbook — Sesión 3
+' Application / Core (Models, Views, ViewModels) / Features / Infrastructure
+
+title Netanbook — Estructura del proyecto (Sources/Netanbook)
+
+skinparam shadowing false
+skinparam defaultFontName DejaVu Sans
+left to right direction
+skinparam packageStyle folder
+skinparam ArrowColor #333333
+skinparam package {
+  BorderColor #333333
+}
+
+package "Application" as App #F2F2F2 {
+  file "NetanbookApp.swift" as fApp
+  file "AppConfig.swift" as fConfig
+}
+
+package "Core" as Core #EEF4FA {
+  package "Models" as Models {
+    file "Book.swift" as fBook
+    file "ReadingStatus.swift" as fStatus
+  }
+  package "ViewModels" as VMs {
+    file "BookListViewModel.swift" as fVM
+  }
+  package "Views" as Views {
+    file "BookListView.swift" as fList
+    file "BookRowView.swift" as fRow
+  }
+}
+
+package "Features" as Feat #FFFBEA {
+  package "Progreso (F1)" as P1 {
+    file "ReadingProgress.swift"
+  }
+  package "NotasYCitas (F2)" as P2 {
+    file "BookNote.swift"
+  }
+  package "Categorias (F3)" as P3 {
+    file "BookCategory.swift"
+  }
+  package "ValoracionesYResenas (F4)" as P4 {
+    file "BookReview.swift"
+  }
+  package "Estadisticas (F5)" as P5 {
+    file "LibraryStatistics.swift"
+  }
+  package "Prestamos (O1)" as O1 {
+    file "BookLoan.swift"
+  }
+  package "ObjetivoAnual (O2)" as O2 {
+    file "ReadingGoal.swift"
+  }
+  package "TemporizadorLectura (O3)" as O3 {
+    file "ReadingSession.swift"
+  }
+  package "ImportarExportar (O4)" as O4 {
+    file "CSVBookRecord.swift"
+  }
+}
+
+package "Infrastructure" as Infra #F1F8EC {
+  package "Persistence" as Pers {
+    file "BookStorage.swift"
+  }
+  package "Plugins" as Plug {
+    file "(sesiones posteriores)" as fPlug
+  }
+}
+
+App ..> Views : abre BookListView
+Views ..> VMs : lee y delega acciones
+VMs ..> Models : único que modifica
+Feat ..> Models : usan Book.id
+Pers ..> Models : guarda y carga [Book]
+
+note right of VMs
+  <b>BookListViewModel</b>
+  responsable del listado y
+  de modificar el estado
+  de los libros
+end note
+
+@enduml
