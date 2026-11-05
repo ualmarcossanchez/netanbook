@@ -1,0 +1,116 @@
+name: CI
+
+# Compila los dos productos de Netanbook en los tres sistemas:
+# - macOS: los dos schemes del proyecto de Xcode (Netanbook y Netanbook Progreso).
+# - Linux y Windows (Swift 6.3): Package.swift sin traits y con --traits Progreso,
+#   comprobación de que el código de F1 solo está en el ejecutable compilado con
+#   Progreso y arranque de los dos productos.
+# - Windows guarda una captura de cada producto (en Netanbook Progreso, con el flag
+#   de F1 activado). Al lanzar el workflow a mano, las sube a docs/sesion-4/capturas.
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  macos:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compilar los dos schemes del proyecto de Xcode
+        run: |
+          for scheme in "Netanbook" "Netanbook Progreso"; do
+            xcodebuild -project Netanbook.xcodeproj -scheme "$scheme" -destination 'platform=macOS' build CODE_SIGNING_ALLOWED=NO
+          done
+
+  linux:
+    runs-on: ubuntu-latest
+    container: swift:6.3-noble
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependencias (GTK 4 y pantalla virtual)
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq libgtk-4-dev libfontconfig-dev xvfb imagemagick fonts-dejavu
+      - name: Compilar, comprobar F1 y arrancar los dos productos
+        run: |
+          export DISPLAY=:99 GDK_BACKEND=x11 GSK_RENDERER=cairo LANG=C.UTF-8 LC_ALL=C.UTF-8
+          Xvfb :99 -screen 0 1280x800x24 2>/dev/null &
+          sleep 2
+          mkdir -p shots
+          for variante in base Progreso; do
+            opciones=""
+            [ "$variante" = Progreso ] && opciones="--traits Progreso"
+            swift build --product Netanbook $opciones
+            exe="$(swift build --product Netanbook $opciones --show-bin-path)/Netanbook"
+            count=$(strings "$exe" | grep -c ReadingProgressViewModel || true)
+            echo "ReadingProgressViewModel en el producto $variante: $count"
+            if [ "$variante" = base ]; then test "$count" -eq 0; else test "$count" -gt 0; fi
+            "$exe" > shots/$variante.log 2>&1 &
+            app=$!
+            sleep 5
+            kill -0 $app || { echo "El producto $variante se ha cerrado al arrancar"; cat shots/$variante.log; exit 1; }
+            import -window root shots/$variante.png
+            kill $app
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-ui
+          path: shots
+
+  windows:
+    runs-on: windows-latest
+    # Para guardar las capturas en el repositorio cuando se lanza a mano.
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: seanmiddleditch/gha-setup-vsdevenv@v5
+      - uses: compnerd/gha-setup-swift@v0.3.0
+        with:
+          branch: swift-6.3.3-release
+          tag: 6.3.3-RELEASE
+      - uses: actions/cache@v4
+        with:
+          path: .build
+          key: windows-build-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: windows-build-
+      - name: Compilar los dos productos y comprobar dónde está F1
+        run: ./scripts/comprobar-f1.ps1
+      - name: Arrancar los dos productos y capturar su ventana
+        run: |
+          $bin = (swift build --product Netanbook --show-bin-path | Select-Object -Last 1).Trim()
+          foreach ($variante in "base", "progreso") {
+            $opciones = if ($variante -eq "progreso") { @("--traits", "Progreso") } else { @() }
+            swift build --product Netanbook @opciones
+            if ($LASTEXITCODE -ne 0) { throw "No compila el producto $variante" }
+            $app = Start-Process -FilePath "$bin\Netanbook.exe" -WorkingDirectory $bin -PassThru
+            Start-Sleep -Seconds 10
+            if ($app.HasExited) { throw "El producto $variante se ha cerrado al arrancar (código $($app.ExitCode))" }
+            if ($variante -eq "progreso") {
+              ./scripts/capturar-ventana.ps1 -Nombre "netanbook-progreso" -ActivarProgreso
+            } else {
+              ./scripts/capturar-ventana.ps1 -Nombre "netanbook-base"
+            }
+            Stop-Process -Id $app.Id -Force
+            Start-Sleep -Seconds 2
+          }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-ui
+          path: docs/sesion-4/capturas/*.png
+      - name: Guardar las capturas en el repositorio (solo al lanzar el workflow a mano)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/sesion-4/capturas/netanbook-base.png docs/sesion-4/capturas/netanbook-progreso.png
+          git diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) {
+            git commit -m "Capturas de los dos productos generadas por la CI en Windows [skip ci]"
+            git push
+          }
