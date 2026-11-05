@@ -6,7 +6,9 @@ name: CI
 #   comprobación de que el código de F1 solo está en el ejecutable compilado con
 #   Progreso y arranque de los dos productos.
 # - Windows guarda una captura de cada producto (en Netanbook Progreso, con el flag
-#   de F1 activado). Al lanzar el workflow a mano, las sube a docs/sesion-4/capturas.
+#   de F1 activado). Al lanzar el workflow a mano, o si el mensaje del commit
+#   contiene [capturas], las sube a docs/sesion-4/capturas.
+# Los resultados de las comprobaciones salen como anotaciones en la página del workflow.
 on:
   push:
   workflow_dispatch:
@@ -40,15 +42,28 @@ jobs:
           for variante in base Progreso; do
             opciones=""
             [ "$variante" = Progreso ] && opciones="--traits Progreso"
-            swift build --product Netanbook $opciones
+            if ! swift build --product Netanbook $opciones > shots/build-$variante.log 2>&1; then
+              cat shots/build-$variante.log
+              grep -m 5 'error:' shots/build-$variante.log | sed "s/^/::error title=swift build $variante::/"
+              exit 1
+            fi
+            cat shots/build-$variante.log
             exe="$(swift build --product Netanbook $opciones --show-bin-path)/Netanbook"
-            count=$(strings "$exe" | grep -c ReadingProgressViewModel || true)
-            echo "ReadingProgressViewModel en el producto $variante: $count"
-            if [ "$variante" = base ]; then test "$count" -eq 0; else test "$count" -gt 0; fi
+            # Apariciones del tipo de F1, sin contar el nombre del fichero
+            # ReadingProgressViewModel.swift: se compila siempre (vacío sin la
+            # variable) y la información de depuración guarda su nombre.
+            count=$(strings "$exe" | grep -oP 'ReadingProgressViewModel(?!\.swift)' | wc -l)
+            echo "::notice title=F1 en Linux ($variante)::ReadingProgressViewModel aparece $count veces en el ejecutable"
+            if [ "$variante" = base ] && [ "$count" -ne 0 ]; then echo "::error::El producto base contiene código de F1"; exit 1; fi
+            if [ "$variante" = Progreso ] && [ "$count" -eq 0 ]; then echo "::error::Netanbook Progreso no contiene el código de F1"; exit 1; fi
             "$exe" > shots/$variante.log 2>&1 &
             app=$!
             sleep 5
-            kill -0 $app || { echo "El producto $variante se ha cerrado al arrancar"; cat shots/$variante.log; exit 1; }
+            if ! kill -0 $app; then
+              cat shots/$variante.log
+              echo "::error::El producto $variante se ha cerrado al arrancar: $(tail -n 3 shots/$variante.log | tr '\n' ' ')"
+              exit 1
+            fi
             import -window root shots/$variante.png
             kill $app
           done
@@ -60,7 +75,7 @@ jobs:
 
   windows:
     runs-on: windows-latest
-    # Para guardar las capturas en el repositorio cuando se lanza a mano.
+    # Para guardar las capturas en el repositorio (a mano o con [capturas] en el commit).
     permissions:
       contents: write
     defaults:
@@ -82,6 +97,7 @@ jobs:
         run: ./scripts/comprobar-f1.ps1
       - name: Arrancar los dos productos y capturar su ventana
         run: |
+          trap { Write-Host "::error title=Capturas::$_"; break }
           $bin = (swift build --product Netanbook --show-bin-path | Select-Object -Last 1).Trim()
           foreach ($variante in "base", "progreso") {
             $opciones = if ($variante -eq "progreso") { @("--traits", "Progreso") } else { @() }
@@ -103,8 +119,8 @@ jobs:
         with:
           name: windows-ui
           path: docs/sesion-4/capturas/*.png
-      - name: Guardar las capturas en el repositorio (solo al lanzar el workflow a mano)
-        if: github.event_name == 'workflow_dispatch'
+      - name: Guardar las capturas en el repositorio (a mano o con [capturas] en el commit)
+        if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[capturas]')
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -112,5 +128,5 @@ jobs:
           git diff --cached --quiet
           if ($LASTEXITCODE -ne 0) {
             git commit -m "Capturas de los dos productos generadas por la CI en Windows [skip ci]"
-            git push
+            git push origin "HEAD:$env:GITHUB_REF_NAME"
           }
