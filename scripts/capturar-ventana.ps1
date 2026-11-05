@@ -1,9 +1,13 @@
-# Captura la ventana de Netanbook que está en marcha y la guarda en
-# docs/sesion-4/capturas/<Nombre>.png. Solo captura la ventana de la app.
+﻿# Captura la ventana de Netanbook que está en marcha y la guarda en
+# docs/sesion-4/capturas/<Nombre>.png. Con -ActivarProgreso, antes de capturar
+# pulsa el botón «Progreso: No» para activar el flag de F1 (solo existe en el
+# producto Netanbook Progreso).
 #
 #   powershell -ExecutionPolicy Bypass -File scripts/capturar-ventana.ps1 -Nombre netanbook-base
+#   powershell -ExecutionPolicy Bypass -File scripts/capturar-ventana.ps1 -Nombre netanbook-progreso -ActivarProgreso
 param(
     [Parameter(Mandatory = $true)][string]$Nombre,
+    [switch]$ActivarProgreso,
     [int]$Ancho = 900,
     [int]$Alto = 720
 )
@@ -19,13 +23,17 @@ public static class VentanaNetanbook {
     public delegate bool EnumProc(IntPtr h, IntPtr p);
     [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
     [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc f, IntPtr p);
+    [DllImport("user32.dll")] public static extern bool EnumChildWindows(IntPtr h, EnumProc f, IntPtr p);
     [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
     [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr h, StringBuilder s, int n);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
     [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
+    [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
+    [DllImport("user32.dll")] public static extern void mouse_event(uint f, uint x, uint y, uint d, IntPtr e);
     [DllImport("dwmapi.dll")] public static extern int DwmGetWindowAttribute(IntPtr h, int attr, out RECT r, int size);
     public static List<IntPtr> Ventanas(uint pid) {
         var lista = new List<IntPtr>();
@@ -36,16 +44,37 @@ public static class VentanaNetanbook {
         }, IntPtr.Zero);
         return lista;
     }
+    public static List<IntPtr> Hijas(IntPtr padre) {
+        var lista = new List<IntPtr>();
+        EnumChildWindows(padre, (h, p) => { lista.Add(h); return true; }, IntPtr.Zero);
+        return lista;
+    }
     public static string Clase(IntPtr h) { var s = new StringBuilder(256); GetClassName(h, s, 256); return s.ToString(); }
+    public static string Texto(IntPtr h) { var s = new StringBuilder(512); GetWindowText(h, s, 512); return s.ToString(); }
     // Marco visible de la ventana, sin el borde invisible que añade Windows.
     public static RECT Marco(IntPtr h) {
         RECT r;
         if (DwmGetWindowAttribute(h, 9, out r, Marshal.SizeOf(typeof(RECT))) != 0) GetWindowRect(h, out r);
         return r;
     }
+    public static void Clic(int x, int y) {
+        SetCursorPos(x, y);
+        mouse_event(0x0002, 0, 0, 0, IntPtr.Zero);
+        mouse_event(0x0004, 0, 0, 0, IntPtr.Zero);
+    }
 }
 "@
 [VentanaNetanbook]::SetProcessDPIAware() | Out-Null
+
+# Controles visibles de la ventana: clase, texto y rectángulo en pantalla.
+function Get-Controles([IntPtr]$ventana) {
+    foreach ($c in [VentanaNetanbook]::Hijas($ventana)) {
+        if (-not [VentanaNetanbook]::IsWindowVisible($c)) { continue }
+        $r = New-Object RECT; [VentanaNetanbook]::GetWindowRect($c, [ref]$r) | Out-Null
+        [pscustomobject]@{ Clase = [VentanaNetanbook]::Clase($c); Texto = [VentanaNetanbook]::Texto($c);
+            X = $r.Left; Y = $r.Top; W = $r.Right - $r.Left; H = $r.Bottom - $r.Top }
+    }
+}
 
 $proceso = Get-Process -Name Netanbook -ErrorAction SilentlyContinue | Select-Object -First 1
 if (-not $proceso) { throw "Netanbook no está en marcha. Ejecútalo antes de capturar." }
@@ -60,6 +89,26 @@ if (-not $h) { throw "No se encuentra la ventana de Netanbook." }
 [VentanaNetanbook]::SetForegroundWindow($h) | Out-Null
 Start-Sleep -Milliseconds 1500
 
+$aviso = $null
+if ($ActivarProgreso) {
+    $controles = @(Get-Controles $h)
+    Write-Host "Controles antes de activar el flag:"
+    $controles | Format-Table -AutoSize | Out-String -Width 220 | Write-Host
+    # El botón del flag está arriba, debajo del título. Si su texto no está
+    # disponible, es el primer botón ancho de la ventana.
+    $boton = $controles | Where-Object { $_.Texto -like "Progreso:*" } | Select-Object -First 1
+    if (-not $boton) {
+        $boton = $controles | Where-Object { $_.Clase -eq "SwiftUICustomButton" -and $_.W -gt 60 } |
+            Sort-Object Y | Select-Object -First 1
+    }
+    if (-not $boton) { throw "No se encuentra el botón del flag de Progreso." }
+    [VentanaNetanbook]::Clic($boton.X + [int]($boton.W / 2), $boton.Y + [int]($boton.H / 2))
+    Start-Sleep -Seconds 2
+    $paginas = @(Get-Controles $h | Where-Object { $_.Texto -like "*gina *" }).Count
+    Write-Host "Textos con «Página» tras activar el flag: $paginas"
+    if ($paginas -eq 0) { $aviso = "Tras pulsar el botón no se ve el progreso de ningún libro." }
+}
+
 $r = [VentanaNetanbook]::Marco($h)
 $imagen = New-Object System.Drawing.Bitmap ($r.Right - $r.Left), ($r.Bottom - $r.Top)
 $grafico = [System.Drawing.Graphics]::FromImage($imagen)
@@ -73,3 +122,4 @@ $grafico.Dispose(); $imagen.Dispose()
 
 [VentanaNetanbook]::SetWindowPos($h, [IntPtr](-2), 0, 0, 0, 0, 0x0003) | Out-Null           # HWND_NOTOPMOST
 Write-Host "Captura guardada en $ruta"
+if ($aviso) { throw $aviso }

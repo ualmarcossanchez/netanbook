@@ -24,10 +24,12 @@ El mismo código de la carpeta `Netanbook/` da lugar a dos productos (desde la s
 | Sistema | Cómo se ejecuta | Interfaz |
 |---|---|---|
 | macOS | Abrir `Netanbook.xcodeproj`, elegir el scheme y pulsar ▶ | SwiftUI de Apple |
-| Windows | `swift run Netanbook` (toolchain de Swift y Visual Studio 2022 con C++ y el SDK de Windows) | [SwiftOpenUI](https://github.com/uallps/SwiftOpenUI) con Win32 |
+| Windows | `swift run Netanbook` (Swift **6.3.x**, Visual Studio 2022 con C++ y el SDK de Windows, y el modo de desarrollador activado) | [SwiftOpenUI](https://github.com/uallps/SwiftOpenUI) con Win32 |
 | Linux | `swift run Netanbook` (necesita `libgtk-4-dev` y `libfontconfig-dev`) | SwiftOpenUI con GTK 4 |
 
 En Linux y Windows, `Package.swift` añade un módulo llamado `SwiftUI` (carpeta `Compat/`) que reexporta SwiftOpenUI, así que `import SwiftUI` funciona sin cambiar el código. Es la misma base que el ejemplo del curso, [TaskApp-2026](https://github.com/uallps/TaskApp-2026).
+
+> En Windows, SwiftOpenUI todavía no compila con Swift 6.4. Hay que usar Swift 6.3.x, como la CI del curso.
 
 ## Estructura
 
