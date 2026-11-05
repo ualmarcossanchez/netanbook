@@ -12,6 +12,10 @@ param(
     [int]$Alto = 720
 )
 $ErrorActionPreference = "Stop"
+# Salida en UTF-8 para que las tildes se vean bien en la consola y en la CI.
+try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch { }
+# En la CI de GitHub, los errores y avisos aparecen también como anotaciones del workflow.
+trap { Write-Host "::error title=capturar-ventana.ps1 $Nombre::$_"; break }
 Add-Type -AssemblyName System.Drawing
 Add-Type @"
 using System;
@@ -89,7 +93,6 @@ if (-not $h) { throw "No se encuentra la ventana de Netanbook." }
 [VentanaNetanbook]::SetForegroundWindow($h) | Out-Null
 Start-Sleep -Milliseconds 1500
 
-$aviso = $null
 if ($ActivarProgreso) {
     $controles = @(Get-Controles $h)
     Write-Host "Controles antes de activar el flag:"
@@ -106,7 +109,9 @@ if ($ActivarProgreso) {
     Start-Sleep -Seconds 2
     $paginas = @(Get-Controles $h | Where-Object { $_.Texto -like "*gina *" }).Count
     Write-Host "Textos con «Página» tras activar el flag: $paginas"
-    if ($paginas -eq 0) { $aviso = "Tras pulsar el botón no se ve el progreso de ningún libro." }
+    Write-Host ("::notice title=Captura $Nombre::Pulsado el botón «{0}» ({1}). Controles con «Página» después: {2}" -f $boton.Texto, $boton.Clase, $paginas)
+    # Si SwiftOpenUI dibuja los textos sin ventana propia, no se pueden leer: hay que mirar la captura.
+    if ($paginas -eq 0) { Write-Host "::warning title=Captura $Nombre::No se ha podido leer ningún texto «Página» en la ventana. Revisa la captura." }
 }
 
 $r = [VentanaNetanbook]::Marco($h)
@@ -122,4 +127,3 @@ $grafico.Dispose(); $imagen.Dispose()
 
 [VentanaNetanbook]::SetWindowPos($h, [IntPtr](-2), 0, 0, 0, 0, 0x0003) | Out-Null           # HWND_NOTOPMOST
 Write-Host "Captura guardada en $ruta"
-if ($aviso) { throw $aviso }

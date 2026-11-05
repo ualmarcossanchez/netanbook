@@ -56,4 +56,4 @@ docs/                       Documento de cada sesión
 - [Sesión 3: modelo de características y listado con MVVM](docs/sesion-3/Sesion3_Netanbook_MVVM.md)
 - [Sesión 4: dos productos y F1 Progreso](docs/sesion-4/Sesion4_Netanbook_Productos.md)
 
-La integración continua (`.github/workflows/ci.yml`) compila los dos schemes de Xcode en macOS y los dos productos de `Package.swift` en Linux y Windows.
+La integración continua (`.github/workflows/ci.yml`) compila los dos schemes de Xcode en macOS y los dos productos de `Package.swift` en Linux y Windows. También comprueba que el código de F1 solo está en Netanbook Progreso y, en Windows, hace las capturas de los dos productos.
