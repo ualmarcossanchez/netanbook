@@ -3,6 +3,6 @@
 .swiftpm/
 xcuserdata/
 DerivedData/
-*.xcodeproj/
+shots/
 .vscode/*
 !.vscode/extensions.json

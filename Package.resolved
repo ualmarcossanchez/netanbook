@@ -1,0 +1,24 @@
+{
+  "originHash" : "06fe78f6ad99faedc167265dc52dfc7e739bd30eeba280156df0338fdc409fc7",
+  "pins" : [
+    {
+      "identity" : "swift-syntax",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swiftlang/swift-syntax.git",
+      "state" : {
+        "revision" : "050f1a346fbbac0ca2cfb15a95274f7bd1cf0ccf",
+        "version" : "604.0.0"
+      }
+    },
+    {
+      "identity" : "swiftopenui",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/uallps/SwiftOpenUI.git",
+      "state" : {
+        "branch" : "uallps",
+        "revision" : "0c6085c9d97781ddea7b9872ee8367fecf79b064"
+      }
+    }
+  ],
+  "version" : 3
+}

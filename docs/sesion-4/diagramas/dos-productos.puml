@@ -1,0 +1,94 @@
+@startuml dos-productos
+' Netanbook — Sesión 4: un solo código, dos productos y F1 como componente independiente.
+
+title Netanbook — Dos productos del mismo código
+
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam ArrowColor #333333
+skinparam class {
+  BorderColor #333333
+}
+hide stereotype
+
+package "Productos (se decide al compilar)" as Productos #F2F2F2 {
+  class "Netanbook" as PBase <<producto>> {
+    Xcode: target Netanbook
+    SwiftPM: swift run Netanbook
+    --
+    Core
+  }
+  class "Netanbook Progreso" as PProg <<producto>> {
+    Xcode: target Netanbook Progreso
+    (Active Compilation Conditions: Progreso)
+    SwiftPM: swift run --traits Progreso Netanbook
+    --
+    Core + F1 Progreso
+  }
+}
+
+package "Application" #FFFFFF {
+  class AppConfig <<@Observable>> {
+    showProgress = false   (F1)
+    showNotes = false      (F2)
+    showCategories = false (F3)
+    showReviews = false    (F4)
+    showStatistics = false (F5)
+  }
+}
+
+package "Core (siempre se compila)" as Core #EEF4FA {
+  class Book <<struct>> {
+    id: UUID
+    title: String
+    author: String?
+    status: ReadingStatus
+  }
+  class BookListViewModel <<@Observable>> {
+    books: [Book]
+    changeStatus(id:to:)
+    advanceStatus(id:)
+    addSampleBook()
+  }
+  class BookListView <<View>>
+  class BookRowView <<View>> {
+    book: Book
+    showProgress: Bool
+    changeStatus: () -> Void
+  }
+}
+
+package "Features/Progreso — #if Progreso" as F1 #FFF2CC {
+  class ReadingProgress <<struct>> {
+    bookID: UUID
+    totalPages: Int?
+    currentPage: Int
+  }
+  class ReadingProgressViewModel <<@Observable>> {
+    progressByBook: [UUID: ReadingProgress]
+    advance(bookID:by:)
+  }
+  class ReadingProgressView <<View>>
+}
+
+BookListView *-- BookListViewModel
+BookListView *-- AppConfig
+BookListView ..> BookRowView : libro, flags y closures
+BookListViewModel o-- "0..*" Book
+BookListView *-- ReadingProgressViewModel : solo con Progreso
+BookRowView ..> ReadingProgressView : solo con Progreso\ny showProgress activo
+ReadingProgressViewModel o-- "0..*" ReadingProgress
+ReadingProgress ..> Book : bookID
+
+PBase ..> Core
+PProg ..> Core
+PProg ..> F1
+
+note bottom of F1
+  Los datos de progreso y su ViewModel están fuera de Book
+  y de BookListViewModel. Sin la variable Progreso,
+  esta carpeta no se compila y el Core no cambia.
+end note
+
+@enduml

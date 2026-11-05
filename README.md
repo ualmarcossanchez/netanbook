@@ -6,37 +6,52 @@ Desarrollo de nuestra bookapp para la asignatura de Líneas de Productos Softwar
 
 **Equipo:** Marcos Sánchez García · Javier Zúñiga Carmona · Maria Camila Soto Zapata · Daniel Arevalo Almendros
 
-## Estado actual: sesión 3
+## Productos
 
-- Modelo de características: Core, F1–F5 y una feature original por integrante.
-- Listado de libros con MVVM: `Book` y `ReadingStatus` (Model), `BookListView` (View) y `BookListViewModel` (ViewModel).
-- Bocetos de los modelos de datos de cada feature.
+El mismo código de la carpeta `Netanbook/` da lugar a dos productos (desde la sesión 4):
 
-Documento de la sesión: [docs/sesion-3/Sesion3_Netanbook_MVVM.md](docs/sesion-3/Sesion3_Netanbook_MVVM.md)
+| Producto | Contenido | Xcode (Mac) | Linux y Windows |
+|---|---|---|---|
+| Netanbook | Solo el Core | scheme `Netanbook` | `swift run Netanbook` |
+| Netanbook Progreso | Core + F1 Progreso | scheme `Netanbook Progreso` | `swift run --traits Progreso Netanbook` |
+
+- La variable de compilación `Progreso` decide si el código de F1 **existe** en el producto: en Xcode es el target «Netanbook Progreso» (*Active Compilation Conditions*); en `Package.swift` es el trait `Progreso`.
+- El flag `showProgress` de `AppConfig` decide si F1 se **muestra** con la app en marcha. Los flags de F1–F5 empiezan desactivados.
+- Las opciones de `swift run` van antes del nombre del ejecutable: `swift run --traits Progreso Netanbook`.
+
+## Cómo se ejecuta en cada sistema
+
+| Sistema | Cómo se ejecuta | Interfaz |
+|---|---|---|
+| macOS | Abrir `Netanbook.xcodeproj`, elegir el scheme y pulsar ▶ | SwiftUI de Apple |
+| Windows | `swift run Netanbook` (toolchain de Swift y Visual Studio 2022 con C++ y el SDK de Windows) | [SwiftOpenUI](https://github.com/uallps/SwiftOpenUI) con Win32 |
+| Linux | `swift run Netanbook` (necesita `libgtk-4-dev` y `libfontconfig-dev`) | SwiftOpenUI con GTK 4 |
+
+En Linux y Windows, `Package.swift` añade un módulo llamado `SwiftUI` (carpeta `Compat/`) que reexporta SwiftOpenUI, así que `import SwiftUI` funciona sin cambiar el código. Es la misma base que el ejemplo del curso, [TaskApp-2026](https://github.com/uallps/TaskApp-2026).
 
 ## Estructura
 
 ```
-Sources/Netanbook/
-├── Application/       @main y configuración del producto
+Netanbook.xcodeproj/        Proyecto de Xcode: targets Netanbook y Netanbook Progreso
+Package.swift               Paquete para Linux y Windows, con el trait Progreso
+Compat/SwiftUI/             Módulo SwiftUI de Linux y Windows (reexporta SwiftOpenUI)
+Netanbook/                  Código común a los dos productos
+├── Application/            @main, AppConfig (flags F1–F5) y nombre del producto
 ├── Core/
-│   ├── Models/        Book, ReadingStatus
-│   ├── ViewModels/    BookListViewModel
-│   └── Views/         BookListView, BookRowView
-├── Features/          F1–F5 y features originales (una carpeta por feature)
-└── Infrastructure/    Persistence y Plugins
+│   ├── Models/             Book, ReadingStatus, libros de ejemplo
+│   ├── ViewModels/         BookListViewModel (listado, cambiar estado, añadir)
+│   └── Views/              BookListView y BookRowView (fila con closures)
+├── Features/
+│   ├── Progreso/           F1: Models, ViewModels y Views, todo dentro de #if Progreso
+│   └── ...                 Bocetos de F2–F5 y de las features originales
+└── Infrastructure/         Persistence y Plugins (sesiones posteriores)
+scripts/                    Comprobación de F1 y capturas de la ventana (Windows)
+docs/                       Documento de cada sesión
 ```
 
-## Ejecutar
+## Documentación
 
-La interfaz usa [SwiftCrossUI](https://github.com/moreSwift/swift-cross-ui), así que funciona en Windows, macOS y Linux.
+- [Sesión 3: modelo de características y listado con MVVM](docs/sesion-3/Sesion3_Netanbook_MVVM.md)
+- [Sesión 4: dos productos y F1 Progreso](docs/sesion-4/Sesion4_Netanbook_Productos.md)
 
-```sh
-swift run
-```
-
-- **Windows:** toolchain de Swift y Visual Studio 2022 con las herramientas de C++ y el SDK de Windows.
-- **macOS:** macOS 14 o posterior.
-- **Linux:** GTK 4 (`sudo apt install libgtk-4-dev`).
-
-Extensiones recomendadas de Visual Studio Code: **Swift** (`swiftlang.swift-vscode`) y **PlantUML** (`jebbs.plantuml`).
+La integración continua (`.github/workflows/ci.yml`) compila los dos schemes de Xcode en macOS y los dos productos de `Package.swift` en Linux y Windows.
