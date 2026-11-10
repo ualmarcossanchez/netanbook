@@ -21,9 +21,12 @@ function Contar([string]$ruta) {
 }
 
 function Compilar([string[]]$opciones, [string]$copia) {
-    # cmd /c junta la salida de error con la normal para poder buscar los errores.
-    cmd /c "swift build --product Netanbook $opciones 2>&1" | Tee-Object -Variable salida
-    if ($LASTEXITCODE -ne 0) {
+    # Con "Continue", lo que swift escribe en la salida de error no detiene el script.
+    $ErrorActionPreference = "Continue"
+    swift build --product Netanbook @opciones 2>&1 | ForEach-Object { "$_" } | Tee-Object -Variable salida
+    $codigo = $LASTEXITCODE
+    $ErrorActionPreference = "Stop"
+    if ($codigo -ne 0) {
         $salida | Where-Object { "$_" -match "error:" } | Select-Object -First 5 |
             ForEach-Object { Write-Host "::error title=swift build $opciones::$_" }
         throw "Error al compilar: swift build --product Netanbook $opciones"
