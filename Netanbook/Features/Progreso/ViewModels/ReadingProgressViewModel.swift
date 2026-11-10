@@ -35,5 +35,10 @@ final class ReadingProgressViewModel {
         }
         progressByBook[bookID] = item
     }
+
+    /// Borra el progreso de un libro (cuando el libro se elimina del listado).
+    func removeProgress(bookID: UUID) {
+        progressByBook[bookID] = nil
+    }
 }
 #endif

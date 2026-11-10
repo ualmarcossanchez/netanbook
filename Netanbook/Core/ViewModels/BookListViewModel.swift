@@ -37,4 +37,25 @@ final class BookListViewModel {
     func addSampleBook() {
         books.append(Book(title: "Libro de ejemplo \(books.count + 1)"))
     }
+
+    /// Borra un libro del listado.
+    func removeBook(id: UUID) {
+        books.removeAll { $0.id == id }
+    }
+
+    /// El libro con ese `id`, si sigue en el listado.
+    func book(id: UUID) -> Book? {
+        books.first { $0.id == id }
+    }
+
+    /// Sustituye el libro que tiene el mismo `id` (lo usa el detalle al editar).
+    /// Un título vacío no es válido: en ese caso se conserva el título anterior.
+    func updateBook(_ book: Book) {
+        guard let index = books.firstIndex(where: { $0.id == book.id }) else { return }
+        var updated = book
+        if !Book.isValidTitle(updated.title) {
+            updated.title = books[index].title
+        }
+        books[index] = updated
+    }
 }
