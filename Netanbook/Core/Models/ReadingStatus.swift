@@ -2,7 +2,8 @@
 ///
 /// Tiene exactamente tres valores. `CaseIterable` permite recorrerlos para
 /// agrupar el listado y el `rawValue` es el texto legible de la interfaz.
-enum ReadingStatus: String, CaseIterable {
+/// Es `Codable`: en el JSON se guarda ese mismo texto.
+enum ReadingStatus: String, CaseIterable, Codable {
     case pending = "Pendiente"
     case reading = "Leyendo"
     case finished = "Terminado"

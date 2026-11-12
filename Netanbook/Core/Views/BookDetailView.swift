@@ -16,8 +16,7 @@ struct BookDetailView: View {
                 }
             }
             Text("Autor: \(book.author ?? "Autor desconocido")")
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .bookCaption()
         }
         .navigationTitle(book.title)
     }

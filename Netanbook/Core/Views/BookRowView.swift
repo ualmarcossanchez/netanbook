@@ -23,13 +23,13 @@ struct BookRowView: View {
         HStack {
             Button(action: changeStatus) {
                 Image(systemName: book.status.symbolName)
+                    .foregroundColor(book.status.color)
             }
             .buttonStyle(.plain)
             VStack(alignment: .leading) {
                 Text(book.title)
                 Text(book.author ?? "Autor desconocido")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .bookCaption()
 #if Progreso
                 if showProgress {
                     ReadingProgressView(progress: progress, advance: advanceProgress)

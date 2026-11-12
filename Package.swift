@@ -44,5 +44,12 @@ let package = Package(
                 .enableUpcomingFeature("MemberImportVisibility"),
             ]
         ),
+        // Pruebas del ViewModel con MockBookStorageProvider: `swift test`.
+        .testTarget(
+            name: "NetanbookTests",
+            dependencies: ["Netanbook"],
+            path: "Tests/NetanbookTests",
+            swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
     ]
 )

@@ -2,15 +2,22 @@ import SwiftUI
 
 /// Pantalla principal (Core): la biblioteca agrupada por estado.
 ///
-/// La vista guarda los ViewModels y la configuración en `@State`, dibuja el
-/// listado y delega las acciones. Desde cada fila se navega al detalle del libro.
+/// La vista guarda los ViewModels en `@State`, dibuja el listado y delega las
+/// acciones. Desde cada fila se navega al detalle del libro.
 struct BookListView: View {
-    @State private var viewModel = BookListViewModel()
-    @State private var config = AppConfig()
+    @State private var viewModel: BookListViewModel
+    /// La configuración la crea la app y llega por el entorno: es la misma que edita Ajustes.
+    @Environment(AppConfig.self) private var config
 #if Progreso
     /// ViewModel de F1: independiente del listado y del libro.
     @State private var progressViewModel = ReadingProgressViewModel()
 #endif
+
+    /// Por defecto, el ViewModel guarda en JSON. Las vistas previas le pasan
+    /// uno con `MockBookStorageProvider`.
+    init(viewModel: BookListViewModel = BookListViewModel()) {
+        _viewModel = State(wrappedValue: viewModel)
+    }
 
     var body: some View {
         NavigationStack {
@@ -24,16 +31,11 @@ struct BookListView: View {
                 }
             }
             .toolbar {
-#if Progreso
-                Button("Progreso: \(config.showProgress ? "Sí" : "No")") {
-                    config.showProgress.toggle()
-                }
-#endif
                 Button("Añadir libro") {
                     viewModel.addSampleBook()
                 }
             }
-            .navigationTitle(Product.name)
+            .navigationTitle("Libros")
         }
     }
 
@@ -85,4 +87,10 @@ struct BookListView: View {
         progressViewModel.removeProgress(bookID: id)
 #endif
     }
+}
+
+// Vista previa con almacenamiento en memoria: no lee ni escribe el JSON real.
+#Preview {
+    BookListView(viewModel: BookListViewModel(storageProvider: MockBookStorageProvider()))
+        .environment(AppConfig())
 }

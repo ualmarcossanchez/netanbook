@@ -110,12 +110,17 @@ Los tres ficheros están dentro de `#if Progreso`. Ni `Book` ni `BookListViewMod
 2. `BookListView` muestra el botón del flag.
 3. `BookRowView` recibe el progreso y la acción de avanzar, y muestra `ReadingProgressView` solo si `showProgress` está activo.
 
-**Sin la variable `Progreso`, el código de F1 no se compila.** El script `scripts/comprobar-f1.ps1` compila los dos productos y busca el tipo `ReadingProgressViewModel` en cada ejecutable. La CI de Linux hace la misma comprobación con `strings`.
+**Sin la variable `Progreso`, el código de F1 no se compila.** Lo comprueba la CI en cada push: compila los dos productos y cuenta cuántas veces aparece el tipo `ReadingProgressViewModel` en cada ejecutable.
 
-| Ejecutable | Apariciones de `ReadingProgressViewModel` |
-|---|---|
-| Netanbook (base) | {{F1_BASE}} |
-| Netanbook Progreso | {{F1_PROGRESO}} |
+- **Windows:** `scripts/comprobar-f1.ps1`.
+- **Linux:** la misma búsqueda con `strings` y `grep`.
+
+No se cuenta el nombre del fichero `ReadingProgressViewModel.swift`. Ese fichero se compila en los dos productos: sin la variable, `#if Progreso` lo deja vacío, pero la información de depuración guarda su nombre. La primera versión de la comprobación lo contaba y daba un falso positivo en el producto base.
+
+| Ejecutable | Apariciones en Linux | Apariciones en Windows | Resultado esperado |
+|---|---|---|---|
+| Netanbook (base) | 0 | 0 | 0: F1 no existe |
+| Netanbook Progreso | 114 | 115 | Más de 0: F1 compilada |
 
 ![Dos productos del mismo código](https://www.plantuml.com/plantuml/proxy?cache=no&fmt=svg&src=https://raw.githubusercontent.com/ualmarcossanchez/netanbook/main/docs/sesion-4/diagramas/dos-productos.puml)
 
@@ -156,9 +161,11 @@ Las opciones de `swift run` van antes del nombre del ejecutable. Si se escriben 
 
 ### Capturas (Windows)
 
+Las hace la CI en Windows. Son de la versión de la sesión 5, que tiene la misma lista y el mismo botón del flag, ahora en la barra superior. En Netanbook Progreso, la prueba pulsa «Progreso: No» para activar el flag de F1 antes de capturar.
+
 | Netanbook (base) | Netanbook Progreso, con el flag de F1 activado |
 |---|---|
-| ![Netanbook base](capturas/netanbook-base.png) | ![Netanbook Progreso](capturas/netanbook-progreso.png) |
+| ![Netanbook base](../sesion-5/capturas/base-1-listado.png) | ![Netanbook Progreso](../sesion-5/capturas/progreso-2-progreso-visible.png) |
 
 ---
 
@@ -237,4 +244,6 @@ Al duplicar el target, los dos productos usan la misma carpeta sincronizada. Sol
   - `swift run Netanbook`
   - `swift run --traits Progreso Netanbook`
 - **Comprobación de F1 (Windows):** `powershell -ExecutionPolicy Bypass -File scripts/comprobar-f1.ps1`
-- **Capturas (Windows):** con la app abierta, `powershell -ExecutionPolicy Bypass -File scripts/capturar-ventana.ps1 -Nombre <nombre>`
+- **Capturas:** las hace la prueba de interfaz de la CI en Windows (`scripts/probar-interfaz.ps1`).
+
+> **En Windows hace falta Swift 6.3.x**, la misma versión que usa la CI del ejemplo del curso. Con Swift 6.4, SwiftOpenUI (rama `uallps`) no compila: el SDK de Windows se divide en módulos nuevos y el módulo C de SwiftOpenUI deja de ver tipos como `HWND`. Además, SwiftPM 6.4 usa por defecto el sistema de compilación `swiftbuild`, que en Windows falla con la carpeta de recursos de SwiftOpenUI. También hay que activar el modo de desarrollador de Windows, porque SwiftOpenUI contiene enlaces simbólicos.

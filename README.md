@@ -38,16 +38,18 @@ Netanbook.xcodeproj/        Proyecto de Xcode: targets Netanbook y Netanbook Pro
 Package.swift               Paquete para Linux y Windows, con el trait Progreso
 Compat/SwiftUI/             Módulo SwiftUI de Linux y Windows (reexporta SwiftOpenUI)
 Netanbook/                  Código común a los dos productos
-├── Application/            @main, AppConfig (flags F1–F5) y nombre del producto
+├── Application/            @main con la barra lateral, AppConfig (flags F1–F5) y Theme
 ├── Core/
 │   ├── Models/             Book, ReadingStatus, libros de ejemplo
 │   ├── ViewModels/         BookListViewModel (listado, cambiar estado, añadir)
-│   └── Views/              BookListView y BookRowView (fila con closures)
+│   └── Views/              BookListView, BookRowView (fila con closures) y BookDetailView
 ├── Features/
-│   ├── Progreso/           F1: Models, ViewModels y Views, todo dentro de #if Progreso
+│   ├── Progreso/           F1: Models, ViewModels, Views y Persistence, todo dentro de #if Progreso
+│   ├── Settings/           Pantalla de Ajustes
 │   └── ...                 Bocetos de F2–F5 y de las features originales
-└── Infrastructure/         Persistence y Plugins (sesiones posteriores)
-scripts/                    Comprobación de F1 y capturas de la ventana (Windows)
+└── Infrastructure/         Persistence (BookStorageProvider: JSON y Mock) y Plugins
+Tests/NetanbookTests/       Pruebas del ViewModel con MockBookStorageProvider (swift test)
+scripts/                    Comprobación de F1 y prueba de interfaz con capturas (Windows)
 docs/                       Documento de cada sesión
 ```
 
@@ -55,5 +57,7 @@ docs/                       Documento de cada sesión
 
 - [Sesión 3: modelo de características y listado con MVVM](docs/sesion-3/Sesion3_Netanbook_MVVM.md)
 - [Sesión 4: dos productos y F1 Progreso](docs/sesion-4/Sesion4_Netanbook_Productos.md)
+- [Sesión 5: navegación, paso de datos y Git Flow](docs/sesion-5/Sesion5_Netanbook_Navegacion.md)
+- [Sesión 6: persistencia, ajustes compartidos y tema](docs/sesion-6/Sesion6_Netanbook_Persistencia.md)
 
 La integración continua (`.github/workflows/ci.yml`) compila los dos schemes de Xcode en macOS y los dos productos de `Package.swift` en Linux y Windows. También comprueba que el código de F1 solo está en Netanbook Progreso y, en Windows, hace las capturas de los dos productos.
