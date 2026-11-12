@@ -6,7 +6,9 @@ import Foundation
 /// (identificador, título, autor y estado). Los datos de las features
 /// (progreso, notas, categorías, valoraciones...) no viven aquí: cada
 /// feature guarda los suyos y los asocia al libro mediante `id`.
-struct Book: Identifiable {
+///
+/// Es `Codable`: se puede guardar y leer en JSON.
+struct Book: Identifiable, Codable {
     /// Identidad única y estable. Es `let` porque no cambia aunque se
     /// edite el libro; así la lista y las features lo distinguen siempre.
     let id: UUID

@@ -8,7 +8,7 @@ import Foundation
 // de `Book`: si F1 no se compila, el Core sigue igual y estos datos no existen.
 
 /// Progreso de lectura de un libro.
-struct ReadingProgress: Identifiable {
+struct ReadingProgress: Identifiable, Codable {
     /// Un progreso por libro: su identidad es la del libro.
     var id: UUID { bookID }
 

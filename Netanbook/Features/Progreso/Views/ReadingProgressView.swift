@@ -14,8 +14,7 @@ struct ReadingProgressView: View {
                     .frame(width: 120)
             }
             Text(summary)
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .bookCaption()
             Button("+10 páginas", action: advance)
         }
     }
