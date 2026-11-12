@@ -6,9 +6,10 @@ name: CI
 #   comprobación de que el código de F1 solo está en el ejecutable compilado con
 #   Progreso y arranque de los dos productos.
 # - Windows prueba además la interfaz de los dos productos (scripts/probar-interfaz.ps1):
-#   entra en el detalle de un libro, lo edita y vuelve al listado. Al lanzar el
-#   workflow a mano, o si el mensaje del commit contiene [capturas], sube las
-#   capturas a docs/sesion-N/capturas.
+#   edita un libro, cambia los Ajustes, reinicia la app y comprueba que todo se
+#   conserva. Al lanzar el workflow a mano, o si el mensaje del commit contiene
+#   [capturas], sube las capturas a docs/sesion-N/capturas.
+# - Linux ejecuta además las pruebas del ViewModel con MockBookStorageProvider (swift test).
 # Los resultados de las comprobaciones salen como anotaciones en la página del workflow.
 on:
   push:
@@ -68,6 +69,8 @@ jobs:
             import -window root shots/$variante.png
             kill $app
           done
+      - name: Pruebas del ViewModel con MockBookStorageProvider
+        run: swift test
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -96,7 +99,7 @@ jobs:
           restore-keys: windows-build-
       - name: Compilar los dos productos y comprobar dónde está F1
         run: ./scripts/comprobar-f1.ps1
-      - name: Probar la interfaz de los dos productos (detalle del libro) y capturarla
+      - name: Probar la interfaz de los dos productos (persistencia y Ajustes) y capturarla
         run: |
           ./scripts/probar-interfaz.ps1 -Variante base
           ./scripts/probar-interfaz.ps1 -Variante Progreso
